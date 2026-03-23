@@ -19,7 +19,7 @@
 <div class="player-container">
     <h2>🎵 My Drive Player</h2>
     <h3 id="currentTrack">Φόρτωση...</h3>
-    <audio id="audioPlayer" controls crossorigin="anonymous">
+    <audio id="audioPlayer" controls>
         Το πρόγραμμα περιήγησής σας δεν υποστηρίζει το στοιχείο ήχου.
     </audio>
     <span class="status-tag" id="status">Η θέση αποθηκεύεται αυτόματα</span>
@@ -66,14 +66,13 @@
         currentIndex = index;
         const song = allSongs[index];
         
-        // Αυτό το URL είναι το πιο σταθερό για να παρακάμψουμε το ORB blocking
-        // Χρησιμοποιούμε το drive.google.com και την παράμετρο export=download
-        const streamURL = `https://drive.google.com/uc?id=${song.id}&export=download`;
+        // Χρησιμοποιούμε το "view" link αλλά με export=download στο τέλος
+        // Αυτό συχνά παρακάμπτει τους περιορισμούς CORS των browsers
+        const streamURL = `https://drive.google.com/uc?id=${song.id}&export=download&at=${Date.now()}`;
         
         audioPlayer.src = streamURL;
         currentTrackText.textContent = song.name;
         
-        // Ενημέρωση της λίστας οπτικά
         updateVisualList(index);
     }
 
