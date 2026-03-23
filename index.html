@@ -27,7 +27,7 @@
 </div>
 
 <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbxiinuGEOcH0ZLZ-fSExz9wFkJv6xnrLF6U7Ml1GI4PGlYJ0fV_GwjaPbrn_4nJzu5C/exec"; // <-- Βάλε το δικό σου URL
+    const scriptURL = "https://script.google.com/macros/s/AKfycbwmpP_TFEKk7ZqINIMRHs_-26Mp0S1K18kLvS9IzV-ICINUn_biSfE-j_nOJz3RdSs-/exec"; // <-- Βάλε το δικό σου URL
     const playlistElement = document.getElementById('playlist');
     const audioPlayer = document.getElementById('audioPlayer');
     const currentTrackText = document.getElementById('currentTrack');
@@ -37,53 +37,89 @@
     // 1. Διάβασμα της τελευταίας θέσης από τη μνήμη του browser
     let currentIndex = parseInt(localStorage.getItem('lastPlayedIndex')) || 0;
 
+    // 1. Καλούμε το Google Script χωρίς παραμέτρους για να πάρουμε τη λίστα (JSON)
     fetch(scriptURL)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) throw new Error("Σφάλμα δικτύου");
+            return response.json(); // Μετατρέπει την απάντηση σε αντικείμενο JavaScript
+        })
         .then(songs => {
-            allSongs = songs;
-            playlistElement.innerHTML = ""; 
-            
-            // Έλεγχος αν το currentIndex είναι έγκυρο (π.χ. αν διέγραψες τραγούδια από το Drive)
-            if (currentIndex >= allSongs.length) currentIndex = 0;
-
+            allSongs = songs; // Αποθηκεύουμε τη λίστα στον πίνακα allSongs
+            playlistElement.innerHTML = ""; // Καθαρίζουμε το μήνυμα "Περιμένετε..."
+    
+            // 2. Δημιουργούμε τη λίστα στην οθόνη
             songs.forEach((song, index) => {
                 const li = document.createElement('li');
                 li.textContent = (index + 1) + ". " + song.name;
+                
+                // Όταν κάνουμε κλικ, καλείται η playSong που φτιάξαμε πριν
                 li.onclick = () => playSong(index);
+                
                 playlistElement.appendChild(li);
             });
-
-            // Έναρξη από την αποθηκευμένη θέση
-            loadSong(currentIndex);
+    
+            // 3. Προετοιμάζουμε το τραγούδι που θυμόμαστε από το localStorage
+            if (allSongs.length > 0) {
+                // Αν το currentIndex από το localStorage είναι άκυρο, βάλε 0
+                if (currentIndex >= allSongs.length) currentIndex = 0;
+                loadSong(currentIndex); 
+            }
         })
         .catch(err => {
-            playlistElement.innerHTML = "Σφάλμα σύνδεσης με το Google Script.";
-            console.error(err);
+            console.error("Λεπτομέρειες σφάλματος:", err);
+            playlistElement.innerHTML = "❌ Αδυναμία σύνδεσης με τη λίστα τραγουδιών.";
         });
 
     // 2. Φόρτωση τραγουδιού χωρίς απαραίτητα αυτόματη εκκίνηση (για την πρώτη φόρτωση)
+    // 1. Η function loadSong (Προετοιμασία)
     function loadSong(index) {
         currentIndex = index;
         const song = allSongs[index];
         
-        // Τώρα το URL δείχνει στο Script σου και του λέει ποιο ID να "σερβίρει"
-        const streamURL = `${scriptURL}?fileId=${song.id}`;
-        
-        audioPlayer.src = streamURL;
-        currentTrackText.textContent = song.name;
-        
+        // Ενημερώνουμε το κείμενο και τη λίστα χωρίς να ξεκινήσουμε το fetch ακόμα
+        currentTrackText.textContent = "Επιλεγμένο: " + song.name;
         updateVisualList(index);
-        audioPlayer.play().catch(e => console.log("Περιμένω κλικ..."));
-    }
-
-    // 3. Κύρια συνάρτηση αναπαραγωγής και ΑΠΟΘΗΚΕΥΣΗΣ
-    function playSong(index) {
-        loadSong(index);
-        
-        // Αποθήκευση στο localStorage
         localStorage.setItem('lastPlayedIndex', index);
+    }
+    
+    // 2. Η function playSong (Η καρδιά του Player)
+    async function playSong(index) {
+        currentIndex = index;
+        const song = allSongs[index];
         
-        audioPlayer.play().catch(e => console.log("Αναμονή για κλικ χρήστη..."));
+        // Αποθήκευση στη μνήμη του browser
+        localStorage.setItem('lastPlayedIndex', index);
+        updateVisualList(index);
+        
+        // Οπτική ειδοποίηση φόρτωσης
+        currentTrackText.textContent = "⏳ Φόρτωση: " + song.name + "...";
+    
+        try {
+            // Ζητάμε το τραγούδι από το Google Script ως Base64 κείμενο
+            const response = await fetch(`${scriptURL}?fileId=${song.id}`);
+            const base64Data = await response.text();
+            
+            if (base64Data.length < 100) { 
+                throw new Error("Το αρχείο είναι πολύ μικρό ή κενό.");
+            }
+    
+            // Μετατροπή σε Data URI για τον HTML5 Player
+            const audioSrc = `data:audio/mpeg;base64,${base64Data}`;
+            
+            audioPlayer.src = audioSrc;
+            
+            // Μόλις φορτώσει το src, ξεκινάμε την αναπαραγωγή
+            audioPlayer.play().then(() => {
+                currentTrackText.textContent = "▶️ Παίζει: " + song.name;
+            }).catch(e => {
+                currentTrackText.textContent = "Πατήστε Play για έναρξη";
+                console.log("Autoplay blocked:", e);
+            });
+    
+        } catch (err) {
+            console.error("Σφάλμα:", err);
+            currentTrackText.textContent = "❌ Σφάλμα φόρτωσης τραγουδιού";
+        }
     }
 
     function updateVisualList(index) {
