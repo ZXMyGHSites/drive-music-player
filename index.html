@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <title>My Drive Music Player (Pro)</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: #eef2f5; padding: 20px; }
+        .player-container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: inline-block; min-width: 320px; }
+        #playlist { list-style: none; padding: 0; margin-top: 20px; text-align: left; max-height: 300px; overflow-y: auto; }
+        #playlist li { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; }
+        #playlist li:hover { background: #f0f7ff; }
+        .active { color: #2da44e; font-weight: bold; background: #f0fff4; border-left: 4px solid #2da44e; }
+        audio { width: 100%; margin-top: 15px; }
+        .status-tag { font-size: 0.8em; color: #666; margin-top: 10px; display: block; }
+    </style>
+</head>
+<body>
+
+<div class="player-container">
+    <h2>🎵 My Drive Player</h2>
+    <h3 id="currentTrack">Φόρτωση...</h3>
+    <audio id="audioPlayer" controls>
+        Το πρόγραμμα περιήγησής σας δεν υποστηρίζει το στοιχείο ήχου.
+    </audio>
+    <span class="status-tag" id="status">Η θέση αποθηκεύεται αυτόματα</span>
+    <ul id="playlist">Περιμένετε...</ul>
+</div>
+
+<script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbwLJ56cONkUfqgn2StxEXQgZKntv3UrEBVZtsQkUAQlr--HonDXaVq7CnSq84L4HwwG/exec"; // <-- Βάλε το δικό σου URL
+    const playlistElement = document.getElementById('playlist');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const currentTrackText = document.getElementById('currentTrack');
+
+    let allSongs = [];
+    
+    // 1. Διάβασμα της τελευταίας θέσης από τη μνήμη του browser
+    let currentIndex = parseInt(localStorage.getItem('lastPlayedIndex')) || 0;
+
+    fetch(scriptURL)
+        .then(response => response.json())
+        .then(songs => {
+            allSongs = songs;
+            playlistElement.innerHTML = ""; 
+            
+            // Έλεγχος αν το currentIndex είναι έγκυρο (π.χ. αν διέγραψες τραγούδια από το Drive)
+            if (currentIndex >= allSongs.length) currentIndex = 0;
+
+            songs.forEach((song, index) => {
+                const li = document.createElement('li');
+                li.textContent = (index + 1) + ". " + song.name;
+                li.onclick = () => playSong(index);
+                playlistElement.appendChild(li);
+            });
+
+            // Έναρξη από την αποθηκευμένη θέση
+            loadSong(currentIndex);
+        })
+        .catch(err => {
+            playlistElement.innerHTML = "Σφάλμα σύνδεσης με το Google Script.";
+            console.error(err);
+        });
+
+    // 2. Φόρτωση τραγουδιού χωρίς απαραίτητα αυτόματη εκκίνηση (για την πρώτη φόρτωση)
+    function loadSong(index) {
+        currentIndex = index;
+        const song = allSongs[index];
+        const streamURL = `https://docs.google.com/uc?export=download&id=${song.id}`;
+        
+        audioPlayer.src = streamURL;
+        currentTrackText.textContent = song.name;
+        
+        // Ενημέρωση της λίστας οπτικά
+        updateVisualList(index);
+    }
+
+    // 3. Κύρια συνάρτηση αναπαραγωγής και ΑΠΟΘΗΚΕΥΣΗΣ
+    function playSong(index) {
+        loadSong(index);
+        
+        // Αποθήκευση στο localStorage
+        localStorage.setItem('lastPlayedIndex', index);
+        
+        audioPlayer.play().catch(e => console.log("Αναμονή για κλικ χρήστη..."));
+    }
+
+    function updateVisualList(index) {
+        document.querySelectorAll('#playlist li').forEach(el => el.classList.remove('active'));
+        if (playlistElement.children[index]) {
+            playlistElement.children[index].classList.add('active');
+            playlistElement.children[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    // 4. Αυτόματη συνέχεια στο επόμενο και ενημέρωση μνήμης
+    audioPlayer.onended = function() {
+        let nextIndex = currentIndex + 1;
+        if (nextIndex >= allSongs.length) {
+            nextIndex = 0; // Επιστροφή στην αρχή
+        }
+        playSong(nextIndex);
+    };
+</script>
+
+</body>
+</html>
