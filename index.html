@@ -27,7 +27,7 @@
 </div>
 
 <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbyXgUsYfyg5gJHp-6lizgRZuAsbgfaatgmk1cagE9eH8XyNXj-ZtUP4MoXivfcPzSH3/exec"; // <-- Βάλε το δικό σου URL
+    const scriptURL = "https://script.google.com/macros/s/AKfycbxiinuGEOcH0ZLZ-fSExz9wFkJv6xnrLF6U7Ml1GI4PGlYJ0fV_GwjaPbrn_4nJzu5C/exec"; // <-- Βάλε το δικό σου URL
     const playlistElement = document.getElementById('playlist');
     const audioPlayer = document.getElementById('audioPlayer');
     const currentTrackText = document.getElementById('currentTrack');
@@ -66,18 +66,14 @@
         currentIndex = index;
         const song = allSongs[index];
         
-        // Χρησιμοποιούμε έναν δημόσιο proxy για να παρακάμψουμε το CORS
-        // Αυτό το URL "ξεγελάει" τον browser και την Google
-        const driveURL = `https://drive.google.com/uc?id=${song.id}&export=download`;
-        const streamURL = `https://corsproxy.io/?${encodeURIComponent(driveURL)}`;
+        // Τώρα το URL δείχνει στο Script σου και του λέει ποιο ID να "σερβίρει"
+        const streamURL = `${scriptURL}?fileId=${song.id}`;
         
         audioPlayer.src = streamURL;
         currentTrackText.textContent = song.name;
         
         updateVisualList(index);
-        
-        // Αυτόματη εκκίνηση (αν έχει υπάρξει κλικ στη σελίδα)
-        audioPlayer.play().catch(e => console.log("Περιμένω αλληλεπίδραση..."));
+        audioPlayer.play().catch(e => console.log("Περιμένω κλικ..."));
     }
 
     // 3. Κύρια συνάρτηση αναπαραγωγής και ΑΠΟΘΗΚΕΥΣΗΣ
