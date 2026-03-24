@@ -16,14 +16,9 @@
 </head>
 <body>
 
-<div class="player-container">
-    <h2>🎵 My Drive Player</h2>
-    <h3 id="currentTrack">Επιλέξτε τραγούδι</h3>
-    
-    <iframe id="musicFrame" src="" width="100%" height="150" frameborder="0" allow="autoplay"></iframe>
-    
-    <ul id="playlist">Φόρτωση...</ul>
-</div>
+<audio id="audioPlayer" controls>
+    Το πρόγραμμα περιήγησής σας δεν υποστηρίζει το στοιχείο ήχου.
+</audio>
 
 <script>
     const scriptURL = "https://script.google.com/macros/s/AKfycbwmpP_TFEKk7ZqINIMRHs_-26Mp0S1K18kLvS9IzV-ICINUn_biSfE-j_nOJz3RdSs-/exec"; // <-- Βάλε το δικό σου URL
@@ -84,20 +79,23 @@
     // 2. Η function playSong (Η καρδιά του Player)
     
     function playSong(index) {
-    currentIndex = index;
-    localStorage.setItem('lastPlayedIndex', index);
-    const song = allSongs[index];
-    
-    // Το URL ακριβώς όπως το θέλεις
-    const previewURL = `https://drive.google.com/file/d/${song.id}/preview`;
-    
-    // Ενημέρωση του iframe
-    const iframe = document.getElementById('musicFrame');
-    iframe.src = previewURL;
-    
-    currentTrackText.textContent = "📂 Προβολή: " + song.name;
-    updateVisualList(index);
-}
+        currentIndex = index;
+        localStorage.setItem('lastPlayedIndex', index);
+        const song = allSongs[index];
+        
+        // Η σωστή διαμόρφωση του Direct URL
+        const streamURL = `https://docs.google.com/uc?export=open&id=${song.id}`;
+        
+        audioPlayer.src = streamURL;
+        currentTrackText.textContent = "▶️ " + song.name;
+        
+        updateVisualList(index);
+        
+        // Ξεκινάει το παίξιμο
+        audioPlayer.play().catch(e => {
+            console.log("Η αυτόματη αναπαραγωγή χρειάζεται κλικ χρήστη.");
+        });
+    }
 
     function updateVisualList(index) {
         document.querySelectorAll('#playlist li').forEach(el => el.classList.remove('active'));
