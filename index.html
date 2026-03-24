@@ -83,43 +83,24 @@
     }
     
     // 2. Η function playSong (Η καρδιά του Player)
-    async function playSong(index) {
+    
+    function playSong(index) {
         currentIndex = index;
+        localStorage.setItem('lastPlayedIndex', index);
         const song = allSongs[index];
         
-        // Αποθήκευση στη μνήμη του browser
-        localStorage.setItem('lastPlayedIndex', index);
-        updateVisualList(index);
+        // Η μορφή που δοκίμασες και δουλεύει
+        const streamURL = `https://drive.google.com/file/d/${song.id}/preview`;
         
-        // Οπτική ειδοποίηση φόρτωσης
-        currentTrackText.textContent = "⏳ Φόρτωση: " + song.name + "...";
+        // ΕΝΗΜΕΡΩΣΗ: Αν χρησιμοποιήσεις το /preview, το <audio> tag 
+        // μπορεί να δυσκολευτεί. Η καλύτερη εναλλακτική για streaming είναι:
+        const directStream = `https://drive.google.com/uc?export=download&id=${song.id}`;
     
-        try {
-            // Ζητάμε το τραγούδι από το Google Script ως Base64 κείμενο
-            const response = await fetch(`${scriptURL}?fileId=${song.id}`);
-            const base64Data = await response.text();
-            
-            if (base64Data.length < 100) { 
-                throw new Error("Το αρχείο είναι πολύ μικρό ή κενό.");
-            }
-    
-            // Μετατροπή σε Data URI για τον HTML5 Player
-            const audioSrc = `data:audio/mpeg;base64,${base64Data}`;
-            
-            audioPlayer.src = audioSrc;
-            
-            // Μόλις φορτώσει το src, ξεκινάμε την αναπαραγωγή
-            audioPlayer.play().then(() => {
-                currentTrackText.textContent = "▶️ Παίζει: " + song.name;
-            }).catch(e => {
-                currentTrackText.textContent = "Πατήστε Play για έναρξη";
-                console.log("Autoplay blocked:", e);
-            });
-    
-        } catch (err) {
-            console.error("Σφάλμα:", err);
-            currentTrackText.textContent = "❌ Σφάλμα φόρτωσης τραγουδιού";
-        }
+        audioPlayer.src = directStream; 
+        currentTrackText.textContent = "▶️ " + song.name;
+        
+        updateVisualList(index);
+        audioPlayer.play().catch(e => console.log("Αναμονή για κλικ..."));
     }
 
     function updateVisualList(index) {
