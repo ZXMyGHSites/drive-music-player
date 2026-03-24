@@ -81,7 +81,8 @@
     function loadSong(index) {
         currentIndex = index;
         const song = allSongs[index];
-        const streamURL = `https://docs.google.com/uc?export=open&id=${song.id}`;
+        //const streamURL = `https://docs.google.com/uc?export=open&id=${song.id}`;
+        const streamURL = https://drive.google.com/uc?export=download&id=${song.id}&confirm=no_antivirus;
         
         audioPlayer.src = streamURL;
         currentTrackText.textContent = "Έτοιμο: " + song.name;
