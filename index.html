@@ -2,116 +2,125 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
-    <title>My Drive Music Player (Pro)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Drive Music Player</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: #eef2f5; padding: 20px; }
-        .player-container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: inline-block; min-width: 320px; }
-        #playlist { list-style: none; padding: 0; margin-top: 20px; text-align: left; max-height: 300px; overflow-y: auto; }
-        #playlist li { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; }
-        #playlist li:hover { background: #f0f7ff; }
-        .active { color: #2da44e; font-weight: bold; background: #f0fff4; border-left: 4px solid #2da44e; }
-        audio { width: 100%; margin-top: 15px; }
-        .status-tag { font-size: 0.8em; color: #666; margin-top: 10px; display: block; }
+        body { font-family: sans-serif; background-color: #f4f4f4; display: flex; justify-content: center; padding: 20px; }
+        .player-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h2 { text-align: center; color: #333; }
+        #currentTrack { font-size: 0.9em; color: #666; margin-bottom: 15px; text-align: center; min-height: 1.2em; }
+        audio { width: 100%; margin-bottom: 20px; }
+        ul { list-style: none; padding: 0; max-height: 300px; overflow-y: auto; border-top: 1px solid #eee; }
+        li { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.2s; }
+        li:hover { background: #f0f0f0; }
+        li.active { background: #e3f2fd; color: #1976d2; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<audio id="audioPlayer" controls>
-    Το πρόγραμμα περιήγησής σας δεν υποστηρίζει το στοιχείο ήχου.
-</audio>
+<div class="player-container">
+    <h2>🎵 My Playlist</h2>
+    <div id="currentTrack">Φόρτωση λίστας...</div>
+    
+    <audio id="audioPlayer" controls>
+        Το πρόγραμμα περιήγησής σας δεν υποστηρίζει το στοιχείο ήχου.
+    </audio>
+
+    <ul id="playlist">Περιμένετε...</ul>
+</div>
 
 <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbwmpP_TFEKk7ZqINIMRHs_-26Mp0S1K18kLvS9IzV-ICINUn_biSfE-j_nOJz3RdSs-/exec"; // <-- Βάλε το δικό σου URL
-    const playlistElement = document.getElementById('playlist');
-    const audioPlayer = document.getElementById('audioPlayer');
-    const currentTrackText = document.getElementById('currentTrack');
-
-    let allSongs = [];
+    // 1. ΡΥΘΜΙΣΕΙΣ - Βάλε εδώ το URL από το Google Apps Script (Deploy -> Web App)
+    const scriptURL = "https://script.google.com/macros/s/AKfycby9j8vf8-ZQcP6bu_kM4gYwcn7tliW6OC2NGIeGrizpKtpP4geLbMk1FWT4uBl_7p1x/exec";
     
-    // 1. Διάβασμα της τελευταίας θέσης από τη μνήμη του browser
+    const audioPlayer = document.getElementById('audioPlayer');
+    const playlistElement = document.getElementById('playlist');
+    const currentTrackText = document.getElementById('currentTrack');
+    
+    let allSongs = [];
     let currentIndex = parseInt(localStorage.getItem('lastPlayedIndex')) || 0;
 
-    // 1. Καλούμε το Google Script χωρίς παραμέτρους για να πάρουμε τη λίστα (JSON)
+    // 2. ΑΡΧΙΚΟ FETCH: Παίρνουμε τη λίστα των τραγουδιών (JSON)
     fetch(scriptURL)
         .then(response => {
-            if (!response.ok) throw new Error("Σφάλμα δικτύου");
-            return response.json(); // Μετατρέπει την απάντηση σε αντικείμενο JavaScript
+            if (!response.ok) throw new Error("Σφάλμα σύνδεσης");
+            return response.json();
         })
         .then(songs => {
-            allSongs = songs; // Αποθηκεύουμε τη λίστα στον πίνακα allSongs
-            playlistElement.innerHTML = ""; // Καθαρίζουμε το μήνυμα "Περιμένετε..."
-    
-            // 2. Δημιουργούμε τη λίστα στην οθόνη
-            songs.forEach((song, index) => {
-                const li = document.createElement('li');
-                li.textContent = (index + 1) + ". " + song.name;
-                
-                // Όταν κάνουμε κλικ, καλείται η playSong που φτιάξαμε πριν
-                li.onclick = () => playSong(index);
-                
-                playlistElement.appendChild(li);
-            });
-    
-            // 3. Προετοιμάζουμε το τραγούδι που θυμόμαστε από το localStorage
+            if (songs.error) throw new Error(songs.error);
+            
+            allSongs = songs;
+            renderPlaylist();
+            
             if (allSongs.length > 0) {
-                // Αν το currentIndex από το localStorage είναι άκυρο, βάλε 0
-                if (currentIndex >= allSongs.length) currentIndex = 0;
-                loadSong(currentIndex); 
+                // Φόρτωση του τελευταίου τραγουδιού στη μνήμη (χωρίς αυτόματο play)
+                loadSong(currentIndex);
             }
         })
         .catch(err => {
-            console.error("Λεπτομέρειες σφάλματος:", err);
-            playlistElement.innerHTML = "❌ Αδυναμία σύνδεσης με τη λίστα τραγουδιών.";
+            console.error(err);
+            currentTrackText.textContent = "❌ Σφάλμα στη φόρτωση";
+            playlistElement.innerHTML = "<li>Αδυναμία σύνδεσης με το Google Drive.</li>";
         });
 
-    // 2. Φόρτωση τραγουδιού χωρίς απαραίτητα αυτόματη εκκίνηση (για την πρώτη φόρτωση)
-    // 1. Η function loadSong (Προετοιμασία)
+    // 3. ΕΜΦΑΝΙΣΗ ΛΙΣΤΑΣ ΣΤΗΝ ΟΘΟΝΗ
+    function renderPlaylist() {
+        playlistElement.innerHTML = "";
+        allSongs.forEach((song, index) => {
+            const li = document.createElement('li');
+            li.textContent = (index + 1) + ". " + song.name;
+            li.id = "song-" + index;
+            if (index === currentIndex) li.classList.add('active');
+            
+            li.onclick = () => playSong(index);
+            playlistElement.appendChild(li);
+        });
+    }
+
+    // 4. ΦΟΡΤΩΣΗ ΤΡΑΓΟΥΔΙΟΥ (Χωρίς αναπαραγωγή)
     function loadSong(index) {
         currentIndex = index;
         const song = allSongs[index];
-        
-        // Ενημερώνουμε το κείμενο και τη λίστα χωρίς να ξεκινήσουμε το fetch ακόμα
-        currentTrackText.textContent = "Επιλεγμένο: " + song.name;
-        updateVisualList(index);
-        localStorage.setItem('lastPlayedIndex', index);
-    }
-    
-    // 2. Η function playSong (Η καρδιά του Player)
-    
-    function playSong(index) {
-        currentIndex = index;
-        localStorage.setItem('lastPlayedIndex', index);
-        const song = allSongs[index];
-        
-        // Η σωστή διαμόρφωση του Direct URL
         const streamURL = `https://docs.google.com/uc?export=open&id=${song.id}`;
         
         audioPlayer.src = streamURL;
-        currentTrackText.textContent = "▶️ " + song.name;
-        
-        updateVisualList(index);
-        
-        // Ξεκινάει το παίξιμο
-        audioPlayer.play().catch(e => {
-            console.log("Η αυτόματη αναπαραγωγή χρειάζεται κλικ χρήστη.");
-        });
+        currentTrackText.textContent = "Έτοιμο: " + song.name;
+        updateVisuals();
     }
 
-    function updateVisualList(index) {
-        document.querySelectorAll('#playlist li').forEach(el => el.classList.remove('active'));
-        if (playlistElement.children[index]) {
-            playlistElement.children[index].classList.add('active');
-            playlistElement.children[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // 5. ΑΝΑΠΑΡΑΓΩΓΗ ΤΡΑΓΟΥΔΙΟΥ
+    function playSong(index) {
+        currentIndex = index;
+        const song = allSongs[index];
+        localStorage.setItem('lastPlayedIndex', index);
+        
+        const streamURL = `https://docs.google.com/uc?export=open&id=${song.id}`;
+        
+        audioPlayer.src = streamURL;
+        currentTrackText.textContent = "▶️ Παίζει: " + song.name;
+        
+        updateVisuals();
+        audioPlayer.play().catch(e => console.log("Απαιτείται κλικ για έναρξη"));
+    }
+
+    // 6. ΕΝΗΜΕΡΩΣΗ ΟΠΤΙΚΗΣ ΛΙΣΤΑΣ (Active class)
+    function updateVisuals() {
+        document.querySelectorAll('li').forEach(li => li.classList.remove('active'));
+        const activeLi = document.getElementById("song-" + currentIndex);
+        if (activeLi) {
+            activeLi.classList.add('active');
+            activeLi.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     }
 
-    // 4. Αυτόματη συνέχεια στο επόμενο και ενημέρωση μνήμης
+    // 7. ΑΥΤΟΜΑΤΗ ΜΕΤΑΒΑΣΗ ΣΤΟ ΕΠΟΜΕΝΟ (On Ended)
     audioPlayer.onended = function() {
         let nextIndex = currentIndex + 1;
-        if (nextIndex >= allSongs.length) {
-            nextIndex = 0; // Επιστροφή στην αρχή
+        if (nextIndex < allSongs.length) {
+            playSong(nextIndex);
+        } else {
+            playSong(0); // Επιστροφή στην αρχή
         }
-        playSong(nextIndex);
     };
 </script>
 
