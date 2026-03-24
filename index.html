@@ -18,12 +18,11 @@
 
 <div class="player-container">
     <h2>🎵 My Drive Player</h2>
-    <h3 id="currentTrack">Φόρτωση...</h3>
-    <audio id="audioPlayer" controls>
-        Το πρόγραμμα περιήγησής σας δεν υποστηρίζει το στοιχείο ήχου.
-    </audio>
-    <span class="status-tag" id="status">Η θέση αποθηκεύεται αυτόματα</span>
-    <ul id="playlist">Περιμένετε...</ul>
+    <h3 id="currentTrack">Επιλέξτε τραγούδι</h3>
+    
+    <iframe id="musicFrame" src="" width="100%" height="150" frameborder="0" allow="autoplay"></iframe>
+    
+    <ul id="playlist">Φόρτωση...</ul>
 </div>
 
 <script>
@@ -85,23 +84,20 @@
     // 2. Η function playSong (Η καρδιά του Player)
     
     function playSong(index) {
-        currentIndex = index;
-        localStorage.setItem('lastPlayedIndex', index);
-        const song = allSongs[index];
-        
-        // Η μορφή που δοκίμασες και δουλεύει
-        const streamURL = `https://drive.google.com/file/d/${song.id}/preview`;
-        
-        // ΕΝΗΜΕΡΩΣΗ: Αν χρησιμοποιήσεις το /preview, το <audio> tag 
-        // μπορεί να δυσκολευτεί. Η καλύτερη εναλλακτική για streaming είναι:
-        const directStream = `https://drive.google.com/uc?export=download&id=${song.id}`;
+    currentIndex = index;
+    localStorage.setItem('lastPlayedIndex', index);
+    const song = allSongs[index];
     
-        audioPlayer.src = directStream; 
-        currentTrackText.textContent = "▶️ " + song.name;
-        
-        updateVisualList(index);
-        audioPlayer.play().catch(e => console.log("Αναμονή για κλικ..."));
-    }
+    // Το URL ακριβώς όπως το θέλεις
+    const previewURL = `https://drive.google.com/file/d/${song.id}/preview`;
+    
+    // Ενημέρωση του iframe
+    const iframe = document.getElementById('musicFrame');
+    iframe.src = previewURL;
+    
+    currentTrackText.textContent = "📂 Προβολή: " + song.name;
+    updateVisualList(index);
+}
 
     function updateVisualList(index) {
         document.querySelectorAll('#playlist li').forEach(el => el.classList.remove('active'));
