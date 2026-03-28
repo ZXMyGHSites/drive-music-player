@@ -2,127 +2,24 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Drive Music Player</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Music Player</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="Πικ-Απ-192χ192.png">
+    <meta name="theme-color" content="#121212">
     <style>
-        body { font-family: sans-serif; background-color: #f4f4f4; display: flex; justify-content: center; padding: 20px; }
-        .player-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        h2 { text-align: center; color: #333; }
-        #currentTrack { font-size: 0.9em; color: #666; margin-bottom: 15px; text-align: center; min-height: 1.2em; }
-        audio { width: 100%; margin-bottom: 20px; }
-        ul { list-style: none; padding: 0; max-height: 300px; overflow-y: auto; border-top: 1px solid #eee; }
-        li { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.2s; }
-        li:hover { background: #f0f0f0; }
-        li.active { background: #e3f2fd; color: #1976d2; font-weight: bold; }
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #121212; }
+        iframe { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
+    <iframe src="https://script.google.com/macros/s/AKfycbxSmyNo34O22I-8oQDZAgHuvmAtOkqLscNKO4A2ZQd1amc9JRmJkklfKhI1X1BYnh3s/exec"></iframe>
 
-<div class="player-container">
-    <h2>🎵 My Playlist</h2>
-    <div id="currentTrack">Φόρτωση λίστας...</div>
-    
-    <audio id="audioPlayer" controls>
-        Το πρόγραμμα περιήγησής σας δεν υποστηρίζει το στοιχείο ήχου.
-    </audio>
-
-    <ul id="playlist">Περιμένετε...</ul>
-</div>
-
-<script>
-    // 1. ΡΥΘΜΙΣΕΙΣ - Βάλε εδώ το URL από το Google Apps Script (Deploy -> Web App)
-    const scriptURL = "https://script.google.com/macros/s/AKfycby9j8vf8-ZQcP6bu_kM4gYwcn7tliW6OC2NGIeGrizpKtpP4geLbMk1FWT4uBl_7p1x/exec";
-    
-    const audioPlayer = document.getElementById('audioPlayer');
-    const playlistElement = document.getElementById('playlist');
-    const currentTrackText = document.getElementById('currentTrack');
-    
-    let allSongs = [];
-    let currentIndex = parseInt(localStorage.getItem('lastPlayedIndex')) || 0;
-
-    // 2. ΑΡΧΙΚΟ FETCH: Παίρνουμε τη λίστα των τραγουδιών (JSON)
-    fetch(scriptURL)
-        .then(response => {
-            if (!response.ok) throw new Error("Σφάλμα σύνδεσης");
-            return response.json();
-        })
-        .then(songs => {
-            if (songs.error) throw new Error(songs.error);
-            
-            allSongs = songs;
-            renderPlaylist();
-            
-            if (allSongs.length > 0) {
-                // Φόρτωση του τελευταίου τραγουδιού στη μνήμη (χωρίς αυτόματο play)
-                loadSong(currentIndex);
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            currentTrackText.textContent = "❌ Σφάλμα στη φόρτωση";
-            playlistElement.innerHTML = "<li>Αδυναμία σύνδεσης με το Google Drive.</li>";
-        });
-
-    // 3. ΕΜΦΑΝΙΣΗ ΛΙΣΤΑΣ ΣΤΗΝ ΟΘΟΝΗ
-    function renderPlaylist() {
-        playlistElement.innerHTML = "";
-        allSongs.forEach((song, index) => {
-            const li = document.createElement('li');
-            li.textContent = (index + 1) + ". " + song.name;
-            li.id = "song-" + index;
-            if (index === currentIndex) li.classList.add('active');
-            
-            li.onclick = () => playSong(index);
-            playlistElement.appendChild(li);
-        });
-    }
-
-    // 4. ΦΟΡΤΩΣΗ ΤΡΑΓΟΥΔΙΟΥ (Χωρίς αναπαραγωγή)
-    function loadSong(index) {
-        currentIndex = index;
-        const song = allSongs[index];
-        const streamURL = `https://drive.google.com/uc?id=${song.id}&export=download&at=1`;
-        
-        audioPlayer.src = streamURL;
-        currentTrackText.textContent = "Έτοιμο: " + song.name;
-        updateVisuals();
-    }
-
-    // 5. ΑΝΑΠΑΡΑΓΩΓΗ ΤΡΑΓΟΥΔΙΟΥ
-    function playSong(index) {
-        currentIndex = index;
-        const song = allSongs[index];
-        localStorage.setItem('lastPlayedIndex', index);
-        
-        const streamURL = `https://drive.google.com/uc?id=${song.id}&export=download&at=1`;
-        
-        audioPlayer.src = streamURL;
-        currentTrackText.textContent = "▶️ Παίζει: " + song.name;
-        
-        updateVisuals();
-        audioPlayer.play().catch(e => console.log("Απαιτείται κλικ για έναρξη"));
-    }
-
-    // 6. ΕΝΗΜΕΡΩΣΗ ΟΠΤΙΚΗΣ ΛΙΣΤΑΣ (Active class)
-    function updateVisuals() {
-        document.querySelectorAll('li').forEach(li => li.classList.remove('active'));
-        const activeLi = document.getElementById("song-" + currentIndex);
-        if (activeLi) {
-            activeLi.classList.add('active');
-            activeLi.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    <script>
+        // Εγγραφή Service Worker για PWA λειτουργία
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(() => {});
         }
-    }
-
-    // 7. ΑΥΤΟΜΑΤΗ ΜΕΤΑΒΑΣΗ ΣΤΟ ΕΠΟΜΕΝΟ (On Ended)
-    audioPlayer.onended = function() {
-        let nextIndex = currentIndex + 1;
-        if (nextIndex < allSongs.length) {
-            playSong(nextIndex);
-        } else {
-            playSong(0); // Επιστροφή στην αρχή
-        }
-    };
-</script>
-
+    </script>
 </body>
 </html>
