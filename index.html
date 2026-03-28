@@ -5,20 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Music Player</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="Pik-Ap-192x192.png">
-    <meta name="theme-color" content="#121212">
+    <link rel="icon" type="image/png" href="Πικ-Απ-192χ192.png">
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #121212; }
+        body, html { margin: 0; padding: 0; height: 100vh; overflow: hidden; background: #121212; }
         iframe { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
-    <iframe src="https://script.google.com/macros/s/AKfycbxSmyNo34O22I-8oQDZAgHuvmAtOkqLscNKO4A2ZQd1amc9JRmJkklfKhI1X1BYnh3s/exec"></iframe>
+    <iframe src="https://script.google.com/macros/s/AKfycbxSmyNo34O22I-8oQDZAgHuvmAtOkqLscNKO4A2ZQd1amc9JRmJkklfKhI1X1BYnh3s/exec
+" allow="autoplay; wake-lock"></iframe>
 
     <script>
-        // Εγγραφή Service Worker για PWA λειτουργία
+        // Wake Lock στην κύρια σελίδα του GitHub
+        let wakeLock = null;
+        const requestWakeLock = async () => {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                }
+            } catch (err) {}
+        };
+
+        // Ενεργοποίηση με το που ανοίγει
+        window.addEventListener('load', requestWakeLock);
+        
+        // Επανενεργοποίηση αν γυρίσουμε στην εφαρμογή
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') requestWakeLock();
+        });
+
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').catch(() => {});
+            navigator.serviceWorker.register('sw.js');
         }
     </script>
 </body>
