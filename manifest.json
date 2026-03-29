@@ -2,7 +2,7 @@
   "name": "Cloud Music Player",
   "short_name": "Music Player",
   "start_url": ".",
-  "display": "standalone",
+  "display": "fullscreen",
   "_comment": "Αφαιρέθηκε το orientation για να επιτρέπεται η περιστροφή σε Android 7",
   "background_color": "#121212",
   "theme_color": "#1DB954",
